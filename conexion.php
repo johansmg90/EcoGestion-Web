@@ -1,13 +1,17 @@
 <?php
-$host = 'localhost';
-$user = 'root';
-$password = ''; // Tu contraseña de XAMPP
-$database = 'ecogestion_db';
+// Configuración para entorno local (XAMPP)
+// Al subir a InfinityFree, reemplaza estos 4 valores por los de tu panel de hosting:
+$host = "localhost";
+$user = "root";
+$pass = "";
+$db   = "ecogestion_db";
 
-$conn = new mysqli($host, $user, $password, $database);
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-if ($conn->connect_error) {
-    die("Error de conexión: " . $conn->connect_error);
+try {
+    $conn = new mysqli($host, $user, $pass, $db);
+    $conn->set_charset("utf8mb4");
+} catch (mysqli_sql_exception $e) {
+    die("Error de conexión con la base de datos: " . $e->getMessage());
 }
-// echo "Conexión exitosa"; // Descomentar para probar
 ?>

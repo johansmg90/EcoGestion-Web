@@ -1,26 +1,42 @@
 <?php
 session_start();
-require 'conexion.php';
+require_once 'conexion.php';
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $rut = $_POST['rut'];
-    $password = $_POST['password'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $rut = trim($_POST['rut'] ?? '');
+    $password = $_POST['password'] ?? '';
 
-    // Consulta real a la BD usando consultas preparadas (Seguridad)
-    $stmt = $conn->prepare("SELECT id_usuario, nombre, id_perfil FROM USUARIO WHERE rut = ? AND password = ?");
-    $stmt->bind_param("ss", $rut, $password);
+    $stmt = $conn->prepare("
+        SELECT u.id_usuario, u.rut, u.nombre, u.password, u.id_perfil, p.nombre_rol 
+        FROM usuario u 
+        INNER JOIN perfil p ON u.id_perfil = p.id_perfil 
+        WHERE u.rut = ?
+    ");
+    $stmt->bind_param("s", $rut);
     $stmt->execute();
     $result = $stmt->get_result();
 
-    if ($result->num_rows == 1) {
-        $row = $result->fetch_assoc();
-        $_SESSION['usuario_id'] = $row['id_usuario'];
-        $_SESSION['nombre'] = $row['nombre'];
-        $_SESSION['perfil'] = $row['id_perfil'];
-        
-        header("Location: dashboard.php");
-    } else {
-        echo "<script>alert('Credenciales incorrectas'); window.location.href='index.php';</script>";
+    if ($user = $result->fetch_assoc()) {
+        if (password_verify($password, $user['password'])) {
+            session_regenerate_id(true);
+            $_SESSION['id_usuario'] = $user['id_usuario'];
+            $_SESSION['rut']        = $user['rut'];
+            $_SESSION['nombre']     = $user['nombre'];
+            $_SESSION['id_perfil']  = $user['id_perfil'];
+            $_SESSION['rol']        = $user['nombre_rol'];
+
+            if ($user['id_perfil'] == 1) {
+                header("Location: dashboard.php");
+            } else {
+                header("Location: reciclador.php");
+            }
+            exit();
+        }
     }
+
+    header("Location: index.php?error=1");
+    exit();
 }
+header("Location: index.php");
+exit();
 ?>
